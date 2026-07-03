@@ -1,0 +1,202 @@
+CREATE DATABASE IF NOT EXISTS consultorio_medico;
+USE consultorio_medico;
+
+-- =========================================================================
+-- NIVEL 1: TABLAS MAESTRAS INDEPENDIENTES
+-- =========================================================================
+
+-- Tabla: role
+CREATE TABLE role (
+    id_role INT AUTO_INCREMENT PRIMARY KEY,
+    description VARCHAR(255),
+    name VARCHAR(100) NOT NULL
+);
+
+-- Tabla: user
+CREATE TABLE user (
+    id_user INT AUTO_INCREMENT PRIMARY KEY,
+    enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    password VARCHAR(255) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE
+);
+
+-- Tabla: menu
+CREATE TABLE menu (
+    id_menu INT AUTO_INCREMENT PRIMARY KEY,
+    icon VARCHAR(50),
+    name VARCHAR(100) NOT NULL,
+    url VARCHAR(255)
+);
+
+-- Tabla: category
+CREATE TABLE category (
+    id_category INT AUTO_INCREMENT PRIMARY KEY,
+    description TEXT,
+    name VARCHAR(100) NOT NULL
+);
+
+-- Tabla: family
+CREATE TABLE family (
+    id_family INT AUTO_INCREMENT PRIMARY KEY,
+    description TEXT,
+    name VARCHAR(100) NOT NULL
+);
+
+-- Tabla: laboratory
+CREATE TABLE laboratory (
+    id_laboratory INT AUTO_INCREMENT PRIMARY KEY,
+    address VARCHAR(255),
+    email VARCHAR(100),
+    name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20)
+);
+
+-- Tabla: specialty
+CREATE TABLE specialty (
+    id_specialty INT AUTO_INCREMENT PRIMARY KEY,
+    description VARCHAR(255),
+    name VARCHAR(100) NOT NULL
+);
+
+-- Tabla: patient
+CREATE TABLE patient (
+    id_patient INT AUTO_INCREMENT PRIMARY KEY,
+    address VARCHAR(255),
+    dni VARCHAR(8) NOT NULL UNIQUE,
+    email VARCHAR(100),
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20)
+);
+
+-- Tabla: exam
+CREATE TABLE exam (
+    id_exam INT AUTO_INCREMENT PRIMARY KEY,
+    description VARCHAR(255),
+    name VARCHAR(100) NOT NULL
+);
+
+
+-- =========================================================================
+-- NIVEL 2: TABLAS CON DEPENDENCIAS DIRECTAS SIMPLES
+-- =========================================================================
+
+-- Tabla: user_role
+CREATE TABLE user_role (
+    id_user INT NOT NULL,
+    id_role INT NOT NULL,
+    PRIMARY KEY (id_user, id_role),
+    FOREIGN KEY (id_user) REFERENCES user(id_user) ON DELETE CASCADE,
+    FOREIGN KEY (id_role) REFERENCES role(id_role) ON DELETE CASCADE
+);
+
+-- Tabla: menu_role
+CREATE TABLE menu_role (
+    id_menu INT NOT NULL,
+    id_role INT NOT NULL,
+    PRIMARY KEY (id_menu, id_role),
+    FOREIGN KEY (id_menu) REFERENCES menu(id_menu) ON DELETE CASCADE,
+    FOREIGN KEY (id_role) REFERENCES role(id_role) ON DELETE CASCADE
+);
+
+-- Tabla: product
+CREATE TABLE product (
+    id_product BIGINT AUTO_INCREMENT PRIMARY KEY,
+    description TEXT NOT NULL,
+    expired BOOLEAN NOT NULL DEFAULT FALSE,
+    name VARCHAR(100) NOT NULL,
+    presentation VARCHAR(100) NOT NULL,
+    stock INT NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    id_category INT NOT NULL,
+    id_family INT NOT NULL,
+    id_laboratory INT NOT NULL,
+    FOREIGN KEY (id_category) REFERENCES category(id_category),
+    FOREIGN KEY (id_family) REFERENCES family(id_family),
+    FOREIGN KEY (id_laboratory) REFERENCES laboratory(id_laboratory)
+);
+
+-- Tabla: medic
+CREATE TABLE medic (
+    id_medic INT AUTO_INCREMENT PRIMARY KEY,
+    cmp VARCHAR(20) NOT NULL UNIQUE,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    photo_url VARCHAR(255),
+    id_specialty INT NOT NULL,
+    FOREIGN KEY (id_specialty) REFERENCES specialty(id_specialty)
+);
+
+-- Tabla: sale
+CREATE TABLE sale (
+    id_sale INT AUTO_INCREMENT PRIMARY KEY,
+    sale_date DATETIME NOT NULL,
+    total DECIMAL(10, 2) NOT NULL,
+    id_patient INT NOT NULL,
+    FOREIGN KEY (id_patient) REFERENCES patient(id_patient)
+);
+
+-- Tabla: sale_detail
+CREATE TABLE sale_detail (
+    id_detail INT AUTO_INCREMENT PRIMARY KEY,
+    quantity INT NOT NULL,
+    subtotal DECIMAL(10, 2) NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    id_product BIGINT NOT NULL,
+    id_sale INT NOT NULL,
+    FOREIGN KEY (id_product) REFERENCES product(id_product),
+    FOREIGN KEY (id_sale) REFERENCES sale(id_sale) ON DELETE CASCADE
+);
+
+-- =========================================================================
+-- NIVEL 3: PROCESOS MÉDICOS AVANZADOS (Consultas y transacciones)
+-- =========================================================================
+
+-- Tabla: consult
+CREATE TABLE consult (
+    id_consult INT AUTO_INCREMENT PRIMARY KEY,
+    consult_date DATETIME NOT NULL,
+    num_consult VARCHAR(50) NOT NULL UNIQUE,
+    id_medic INT NOT NULL,
+    id_patient INT NOT NULL,
+    id_user INT NOT NULL,
+    FOREIGN KEY (id_medic) REFERENCES medic(id_medic),
+    FOREIGN KEY (id_patient) REFERENCES patient(id_patient),
+    FOREIGN KEY (id_user) REFERENCES user(id_user)
+);
+
+-- Tabla: consult_exam
+CREATE TABLE consult_exam (
+    id_consult INT NOT NULL,
+    id_exam INT NOT NULL,
+    PRIMARY KEY (id_consult, id_exam),
+    FOREIGN KEY (id_consult) REFERENCES consult(id_consult) ON DELETE CASCADE,
+    FOREIGN KEY (id_exam) REFERENCES exam(id_exam) ON DELETE CASCADE
+);
+
+-- Tabla: consult_detail
+CREATE TABLE consult_detail (
+    id_detail INT AUTO_INCREMENT PRIMARY KEY,
+    diagnosis TEXT NOT NULL,
+    treatment TEXT NOT NULL,
+    id_consult INT NOT NULL,
+    FOREIGN KEY (id_consult) REFERENCES consult(id_consult) ON DELETE CASCADE
+);
+
+-- Tabla: prescription
+CREATE TABLE prescription (
+    id_prescription INT AUTO_INCREMENT PRIMARY KEY,
+    detail TEXT,
+    id_consult INT NOT NULL,
+    FOREIGN KEY (id_consult) REFERENCES consult(id_consult) ON DELETE CASCADE
+);
+
+-- Tabla: prescription_product
+CREATE TABLE prescription_product (
+    id_prescription_product INT AUTO_INCREMENT PRIMARY KEY,
+    quantity_prescription INT NOT NULL,
+    id_prescription INT NOT NULL,
+    id_product BIGINT NOT NULL,
+    FOREIGN KEY (id_prescription) REFERENCES prescription(id_prescription) ON DELETE CASCADE,
+    FOREIGN KEY (id_product) REFERENCES product(id_product)
+);
