@@ -16,7 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:4200") // 👈 Crucial para que Angular no dé error de CORS
+@CrossOrigin(origins = "http://localhost:4200")
 public class MaintenanceRestController {
 
     @Autowired
